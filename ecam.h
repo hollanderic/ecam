@@ -1,5 +1,5 @@
 
-#include <opencv.hpp>
+#include <opencv2/opencv.hpp>
 #include <unistd.h>
 
 #include "ASICamera2.h"

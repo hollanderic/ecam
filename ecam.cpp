@@ -1,6 +1,6 @@
 #include "stdio.h"
 //#include "opencv2/highgui/highgui_c.h"
-#include <opencv.hpp>
+#include <opencv2/opencv.hpp>
 #include "ASICamera2.h"
 #include <sys/time.h>
 #include <time.h>
@@ -53,13 +53,13 @@ eCamera::eCamera() {
 	ASIGetROIFormat(this->idx_, &w, &h,  &bin, &it);
 	printf("imgtype =  %d %d %d %d\n",w,h,bin,it);
 	sleep(1);
-#if 1
+#if 0
 	ASI_ERROR_CODE err;
 	err = ASISetStartPos(0,0,0);
 	if (err != ASI_SUCCESS) {
 		printf("Set Start Pos failed\n");
 	}
-	err = ASISetROIFormat(this->idx_, w/4, h/4, 4, it);
+	err = ASISetROIFormat(this->idx_, w, h, 1, it);
 	if (err != ASI_SUCCESS) {
 		printf("Set ROI format failed - %d\n",err);
 	}
@@ -210,7 +210,7 @@ void eCamera::showit() {
 int  main()
 {
 	eCamera ec;// = eCamera::Create();
-	ec.setGain(500);
+	ec.setGain(300);
 	printf("Gain = %ld\n",ec.getGain());
 	printf("Temperature = %f\n",ec.getTemperature());
 	printf("Width = %u\n",ec.getWidth());
