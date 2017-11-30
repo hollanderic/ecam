@@ -1,9 +1,15 @@
 
+#pragma once
+
 #include <opencv2/opencv.hpp>
 #include <unistd.h>
 
 #include "ASICamera2.h"
 using namespace cv;
+
+#define ECAM_LOGS_ALL   (0xffffffff)
+#define ECAM_LOGS_ERROR ( 1 << 0 )
+#define ECAM_LOGS_DEBUG ( 1 << 1 )
 
 class eCamera {
 public:
@@ -30,21 +36,30 @@ public:
     uint32_t    getHeight()             { return height_;};
     bool        isConnected()           { return connected_;};
 
+    void        enableLogs(uint32_t flags) { log_flags_ |= flags;};
+    void        disableLogs(uint32_t flags) { log_flags_ &= ~flags;};
+
     uint32_t    loadData();
     uint32_t    showData();
     double      adu();
     void        showit();
+    uint32_t    logf(uint32_t flags, const char* fmt, ...);
 
 
 private:
     long getVal( ASI_CONTROL_TYPE ctl);
     long setVal( ASI_CONTROL_TYPE ctl, long val);
+
     bool connected_;
+
+    uint32_t log_level_ = 0;
+
     int idx_ = -1;
     uint32_t width_;
     uint32_t height_;
     uint32_t pixel_size_;
     uint8_t *buf_ = NULL;
+
     Mat image_;
     Mat im_rgb16_;
     Mat im_rgb_;
