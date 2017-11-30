@@ -11,6 +11,14 @@ using namespace cv;
 #define ECAM_LOGS_ERROR ( 1 << 0 )
 #define ECAM_LOGS_DEBUG ( 1 << 1 )
 
+#define eclogf(flags,fmt...) \
+    do { \
+        if (ECAM_LOGS_##flags & log_flags_) { \
+            printf(fmt); \
+        } \
+    } while(0);
+
+
 class eCamera {
 public:
     static eCamera *Create();
@@ -43,7 +51,6 @@ public:
     uint32_t    showData();
     double      adu();
     void        showit();
-    uint32_t    logf(uint32_t flags, const char* fmt, ...);
 
 
 private:
@@ -52,7 +59,7 @@ private:
 
     bool connected_;
 
-    uint32_t log_level_ = 0;
+    uint32_t log_flags_ = 0;
 
     int idx_ = -1;
     uint32_t width_;

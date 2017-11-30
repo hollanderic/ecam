@@ -1,8 +1,8 @@
 #include "stdio.h"
-//#include "opencv2/highgui/highgui_c.h"
 #include <opencv2/opencv.hpp>
 #include "ASICamera2.h"
 #include <sys/time.h>
+#include <stdarg.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -11,23 +11,24 @@
 using namespace cv;
 
 eCamera::eCamera() {
+    this->log_flags_ = ECAM_LOGS_ERROR;
+
     this->connected_ = false;
     if (NumConnectedCameras() == 0) {
-        printf("No cameras connected!\n");
+        eclogf(ERROR,"No cameras connected!\n");
         return;
     }
 
     if (ASIOpenCamera(0) != ASI_SUCCESS)
     {
-        printf("OpenCamera error\n");
+        eclogf(ERROR,"OpenCamera error\n");
         return;
     }
     if (ASIInitCamera(0) != ASI_SUCCESS) {
-        printf("Could not initialize Camera!\n");
+        eclogf(ERROR,"Could not initialize Camera!\n");
         ASICloseCamera(0);
         return;
     }
-
 
     ASI_CAMERA_INFO ASICameraInfo;
 
@@ -37,11 +38,6 @@ eCamera::eCamera() {
     this->pixel_size_ = ASICameraInfo.PixelSize;
     this->idx_ = ASICameraInfo.CameraID;
     int *temp;
-    temp = ASICameraInfo.SupportedBins;
-    for (int i = 0; i < 16 & temp[i] !=0; i++) {
-        printf("%d ",temp[i]);
-    }
-    printf("\n");
 
     printf("Opened CameraID = %d\n",this->idx_);
     int w;
@@ -197,7 +193,7 @@ double eCamera::adu() {
     for (int i=0; i < width_ *height_; i++) {
         sum+=temp[i];
     }
-    printf("sum = %ld\n",sum);
+    printf("sum = %lld\n",sum);
     return sum/(double)(width_*height_);
 }
 
@@ -209,9 +205,14 @@ void eCamera::showit() {
 }
 
 
+
 int  main()
 {
     eCamera ec;// = eCamera::Create();
+    if (!ec.isConnected()) {
+        return 0;
+    }
+
     ec.setGain(300);
     printf("Gain = %ld\n",ec.getGain());
     printf("Temperature = %f\n",ec.getTemperature());

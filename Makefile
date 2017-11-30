@@ -5,6 +5,9 @@ CC = g++
 
 PLAT = $(shell uname -s)
 
+ZWOPATH = $(HOME)/src/external/zwo
+
+
 ifeq ($(PLAT),Darwin)
 #INCLIB = /usr/local/include
 #LDLIB = /usr/local/lib
@@ -16,7 +19,9 @@ OPENCVLIBS = -L/usr/local/Cellar/opencv@2/2.4.13.4/lib -lopencv_calib3d \
              -lopencv_nonfree -lopencv_objdetect -lopencv_ocl -lopencv_photo \
              -lopencv_stitching -lopencv_superres -lopencv_ts -lopencv_video -lopencv_videostab
 platform = mac
+ZWOLIBS = DYLD_LIBRARY_PATH=$(ZWOPATH)/lib/$(platform)
 endif
+
 ifeq ($(PLAT),Linux)
 platform = x64
 OPENCVCFLAGS = $(shell pkg-config --cflags opencv) -I/usr/include/opencv2
@@ -27,7 +32,6 @@ endif
 #$(shell pkg-config --libs opencv)  -lopencv_core -lopencv_highgui -lopencv_imgproc
 #USB =  -I../libusb/include  -L../libusb/$(platform) -lusb-1.0
 
-ZWOPATH = $(HOME)/src/external/zwo
 LIBSPATH = -L$(ZWOPATH)/lib/$(platform) -L/usr/lib64 -I$(ZWOPATH)/include
 
 
