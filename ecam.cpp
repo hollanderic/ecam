@@ -38,16 +38,12 @@ eCamera::eCamera() {
     this->idx_ = ASICameraInfo.CameraID;
 
     eclogf(INFO,"Opened CameraID = %d\n",this->idx_);
-    int w;
-    int h;
     int bin;
     ASI_IMG_TYPE it;
 
-    ASIGetROIFormat(this->idx_, &w, &h,  &bin, &it);
-    this->width_ = w;
-    this->height_ = h;
-    eclogf(INFO,"imgtype =  %d %d %d %d\n",w,h,bin,it);
-
+    ASIGetROIFormat(this->idx_, &this->width_,
+                                &this->height_,
+                                &bin, &it);
 #if 0
     int numcontrols;
     ASI_CONTROL_CAPS cap;
@@ -74,7 +70,6 @@ eCamera::~eCamera() {
     if (idx_ >= 0) {
         ASICloseCamera(idx_);
     }
-    if (buf_) free(buf_);
     printf("eCamera closed\n");
 }
 
@@ -197,21 +192,6 @@ uint32_t eCamera::showData() {
     //namedWindow( "image preview", CV_WINDOW_AUTOSIZE );
     imshow("image preview",image_);
     return 0;
-}
-
-
-double eCamera::adu() {
-    if (!buf_) {
-        printf("no valid buffer!\n");
-        return 0;
-    }
-    uint64_t sum=0;
-    uint16_t *temp = (uint16_t*)buf_;
-    for (int i=0; i < width_ *height_; i++) {
-        sum+=temp[i];
-    }
-    printf("sum = %lld\n",sum);
-    return sum/(double)(width_*height_);
 }
 
 void eCamera::showit() {

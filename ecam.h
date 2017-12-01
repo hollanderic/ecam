@@ -66,14 +66,13 @@ private:
 
     uint32_t log_flags_ = ECAM_LOGS_ALL;
 
-    int idx_ = -1;
+    int      idx_ = -1;
     uint32_t max_width_;
     uint32_t max_height_;
-    uint32_t width_;
-    uint32_t height_;
+    int      width_;
+    int      height_;
     uint32_t pixel_size_;
     uint32_t bpp_;
-    uint8_t *buf_ = NULL;
 
     Mat image_;
     Mat im_rgb16_;
