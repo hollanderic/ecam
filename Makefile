@@ -56,7 +56,7 @@ all: ecam
 
 
 ecam:ecam.cpp
-	$(CC)  ecam.cpp -o ecam $(CFLAGS) $(OPENCVCFLAGS) $(OPENCVLIBS) -lASICamera2
+	$(CC)  main.cpp ecam.cpp -o ecam $(CFLAGS) $(OPENCVCFLAGS) $(OPENCVLIBS) -lASICamera2
 	@echo "$(ZWOLIBS) ./ecam">tester
 	@chmod +x tester
 

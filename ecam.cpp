@@ -31,42 +31,20 @@ eCamera::eCamera() {
     }
 
     ASI_CAMERA_INFO ASICameraInfo;
-
     ASIGetCameraProperty(&ASICameraInfo, 0);
     this->width_ = ASICameraInfo.MaxWidth;
     this->height_ = ASICameraInfo.MaxHeight;
     this->pixel_size_ = ASICameraInfo.PixelSize;
     this->idx_ = ASICameraInfo.CameraID;
-    int *temp;
 
-    printf("Opened CameraID = %d\n",this->idx_);
+    eclogf(INFO,"Opened CameraID = %d\n",this->idx_);
     int w;
     int h;
     int bin;
     ASI_IMG_TYPE it;
-    this->setMonoBin();
 
     ASIGetROIFormat(this->idx_, &w, &h,  &bin, &it);
-    printf("imgtype =  %d %d %d %d\n",w,h,bin,it);
-    sleep(1);
-#if 0
-    ASI_ERROR_CODE err;
-    err = ASISetStartPos(0,0,0);
-    if (err != ASI_SUCCESS) {
-        printf("Set Start Pos failed\n");
-    }
-    err = ASISetROIFormat(this->idx_, w, h, 1, it);
-    if (err != ASI_SUCCESS) {
-        printf("Set ROI format failed - %d\n",err);
-    }
-    this->width_=w/4;
-    this->height_ = h/4;
-
-    ASIGetROIFormat(this->idx_, &w, &h,  &bin, &it);
-
-    printf("imgtype =  %d %d %d %d\n",w,h,bin,it);
-#endif
-    this->image_ = Mat::zeros(this->height_, this->width_, CV_8UC1 );
+    eclogf(INFO,"imgtype =  %d %d %d %d\n",w,h,bin,it);
 
 #if 0
     int numcontrols;
@@ -120,6 +98,39 @@ eCamera* eCamera::Create() {
     return ec;
 }
 
+
+uint32_t eCamera::setROI(uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
+
+    ASI_ERROR_CODE err;
+    err = ASISetStartPos(idx_,x,y);
+    if (err != ASI_SUCCESS) {
+        eclogf(ERROR,"Set Start Pos failed\n");
+        return 1;
+    }
+    width = (width + 8 - 1) & ~0x07;
+    height = (height + 8 - 1) & ~0x07;
+
+    printf("setting roi - %d x %d\n",width,height);
+    err = ASISetROIFormat(idx_, width, height, 1, ASI_IMG_RAW16);
+    if (err != ASI_SUCCESS) {
+        eclogf(ERROR,"Set ROI format failed - %d\n",err);
+    }
+    width_ = width;
+    height_ = height;
+
+    int w;
+    int h;
+    int bin;
+    ASI_IMG_TYPE it;
+    ASIGetROIFormat(idx_, &w, &h,  &bin, &it);
+    width_ = w;
+    height_ = h;
+    bpp_ = 2;
+
+    return 0;
+
+}
+
 void eCamera::startExposure() {
     ASI_BOOL dark = ASI_FALSE;
     ASIStartExposure(idx_, dark);
@@ -146,6 +157,11 @@ long eCamera::getVal(ASI_CONTROL_TYPE ctl) {
     return val;
 }
 
+uint32_t eCamera::saveTIFF(const char* fname){
+    imwrite(fname,im_rgb_);
+    return 0;
+}
+
 long eCamera::setVal(ASI_CONTROL_TYPE ctl, long val){
     ASI_BOOL pbool = ASI_FALSE;
     ASI_ERROR_CODE stat;
@@ -158,15 +174,14 @@ long eCamera::setVal(ASI_CONTROL_TYPE ctl, long val){
 }
 
 uint32_t eCamera::loadData() {
-    //uint8_t *buf = malloc(width_*height_);
+    image_ = Mat::zeros(height_, width_, CV_16UC1 );
 
-    if (ASIGetDataAfterExp(0,(unsigned char*)image_.ptr(),width_ * height_ ) != ASI_SUCCESS) {
+    if (ASIGetDataAfterExp(0,(unsigned char*)image_.ptr(),width_ * height_ * bpp_ ) != ASI_SUCCESS) {
         printf("GetImage failed\n");
-        //free(buf);
         return 1;
     }
     //cv::Mat 8mat(height, width, CV_16UC1, inputBuffer);
-    im_rgb_ = cv::Mat(height_, width_, CV_8UC3);
+    im_rgb_ = cv::Mat(height_, width_, CV_16UC3);
     cv::cvtColor(image_, im_rgb_, cv::COLOR_BayerRG2RGB);
     im_preview_ = cv::Mat(height_/4, width_/4, CV_8UC3);
     resize(im_rgb_, im_preview_, im_preview_.size());
@@ -178,7 +193,7 @@ uint32_t eCamera::loadData() {
 
 uint32_t eCamera::showData() {
     //namedWindow( "image preview", CV_WINDOW_AUTOSIZE );
-    imshow("image preview",im_preview_);
+    imshow("image preview",image_);
     return 0;
 }
 
@@ -204,35 +219,3 @@ void eCamera::showit() {
     printf("\n");
 }
 
-
-
-int  main()
-{
-    eCamera ec;// = eCamera::Create();
-    if (!ec.isConnected()) {
-        return 0;
-    }
-
-    ec.setGain(300);
-    printf("Gain = %ld\n",ec.getGain());
-    printf("Temperature = %f\n",ec.getTemperature());
-    printf("Width = %u\n",ec.getWidth());
-    printf("Exposure = %ld\n",ec.getExposure());
-
-
-    if (ec.isHWBin()) { printf("Hardware binning on\n");}
-    ec.setExposure(100000);
-    printf("Exposure = %ld\n",ec.getExposure());
-    while (1) {
-        char c;
-        ec.startExposure();
-        while (ec.exposureStatus() != 0) {
-        }
-        ec.loadData();
-        ec.showData();
-        c=waitKey(1);
-        if (c == 'x') break;
-    }
-    return 0;
-
-}
