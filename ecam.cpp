@@ -32,8 +32,8 @@ eCamera::eCamera() {
 
     ASI_CAMERA_INFO ASICameraInfo;
     ASIGetCameraProperty(&ASICameraInfo, 0);
-    this->width_ = ASICameraInfo.MaxWidth;
-    this->height_ = ASICameraInfo.MaxHeight;
+    this->max_width_ = ASICameraInfo.MaxWidth;
+    this->max_height_ = ASICameraInfo.MaxHeight;
     this->pixel_size_ = ASICameraInfo.PixelSize;
     this->idx_ = ASICameraInfo.CameraID;
 
@@ -44,6 +44,8 @@ eCamera::eCamera() {
     ASI_IMG_TYPE it;
 
     ASIGetROIFormat(this->idx_, &w, &h,  &bin, &it);
+    this->width_ = w;
+    this->height_ = h;
     eclogf(INFO,"imgtype =  %d %d %d %d\n",w,h,bin,it);
 
 #if 0
