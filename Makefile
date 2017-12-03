@@ -57,7 +57,7 @@ all: ecam
 
 ecam:ecam.cpp
 	$(CC)  main.cpp ecam.cpp -o ecam $(CFLAGS) $(OPENCVCFLAGS) $(OPENCVLIBS) -lASICamera2
-	@echo "$(ZWOLIBS) ./ecam">tester
+	@echo '$(ZWOLIBS) ./ecam $$*' >tester
 	@chmod +x tester
 
 cv: cv.cpp

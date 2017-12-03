@@ -10,8 +10,26 @@
 
 using namespace cv;
 
+//Converts ASI_IMG_TYPE to number of bytes per pixel
+static inline uint32_t asiImgTypeToBPP(ASI_IMG_TYPE imtype) {
+    switch (imtype) {
+        case ASI_IMG_RAW8:
+            return 1;
+        case ASI_IMG_RGB24:
+            return 3;
+        case ASI_IMG_RAW16:
+            return 2;
+        case ASI_IMG_Y8:
+            return 1;
+        default:
+            return 1;
+    }
+}
+
 eCamera::eCamera() {
+    //By default show all error messages in log
     this->log_flags_ = ECAM_LOGS_ERROR;
+    uint32_t log_flags_ = this->log_flags_;
 
     this->connected_ = false;
     if (NumConnectedCameras() == 0) {
@@ -29,6 +47,7 @@ eCamera::eCamera() {
         ASICloseCamera(0);
         return;
     }
+    eclogf(INFO,"Opened CameraID = %d\n",this->idx_);
 
     ASI_CAMERA_INFO ASICameraInfo;
     ASIGetCameraProperty(&ASICameraInfo, 0);
@@ -37,13 +56,14 @@ eCamera::eCamera() {
     this->pixel_size_ = ASICameraInfo.PixelSize;
     this->idx_ = ASICameraInfo.CameraID;
 
-    eclogf(INFO,"Opened CameraID = %d\n",this->idx_);
-    int bin;
     ASI_IMG_TYPE it;
-
     ASIGetROIFormat(this->idx_, &this->width_,
                                 &this->height_,
-                                &bin, &it);
+                                &this->bin_, &it);
+
+    this->bpp_ = asiImgTypeToBPP(it);
+    eclogf(INFO,"Image size: %d x %d bpp:%d\n",width_,height_,this->bpp_);
+
 #if 0
     int numcontrols;
     ASI_CONTROL_CAPS cap;
@@ -73,28 +93,11 @@ eCamera::~eCamera() {
     printf("eCamera closed\n");
 }
 
-eCamera* eCamera::Create() {
-    if (NumConnectedCameras() == 0) {
-        printf("No cameras connected!\n");
-        return NULL;
-    }
-
-    if (ASIOpenCamera(0) != ASI_SUCCESS)
-    {
-        printf("OpenCamera error\n");
-        return NULL;
-    }
-    if (ASIInitCamera(0) != ASI_SUCCESS) {
-        printf("Could not initialize Camera!\n");
-        ASICloseCamera(0);
-        return NULL;
-    }
-    eCamera *ec = new eCamera;
-
-    ec->idx_ = 0;
-    return ec;
+long eCamera::setGain(const char* val) {
+    int g = atoi(val);
+    printf("Gain set to %d\n",g);
+    return setGain(g);
 }
-
 
 uint32_t eCamera::setROI(uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
 
@@ -122,10 +125,16 @@ uint32_t eCamera::setROI(uint32_t x, uint32_t y, uint32_t width, uint32_t height
     ASIGetROIFormat(idx_, &w, &h,  &bin, &it);
     width_ = w;
     height_ = h;
-    bpp_ = 2;
+    bpp_ = asiImgTypeToBPP(it);
+    printf("Image size: %d x %d\n",width_,height_);
 
     return 0;
 
+}
+
+long eCamera::setExposure(const char* val){
+    int e = atoi(val);
+    return setExposure(e);
 }
 
 void eCamera::startExposure() {
@@ -171,33 +180,58 @@ long eCamera::setVal(ASI_CONTROL_TYPE ctl, long val){
 }
 
 uint32_t eCamera::loadData() {
-    image_ = Mat::zeros(height_, width_, CV_16UC1 );
-
-    if (ASIGetDataAfterExp(0,(unsigned char*)image_.ptr(),width_ * height_ * bpp_ ) != ASI_SUCCESS) {
-        printf("GetImage failed\n");
+    image_ = Mat::zeros(height_, width_, CV_8UC1 );
+    ASI_ERROR_CODE stat;
+    stat = ASIGetDataAfterExp(0,(unsigned char*)image_.ptr(),width_ * height_ * bpp_ );
+    if (stat != ASI_SUCCESS) {
+        eclogf(ERROR,"GetImage failed - %d\n",stat);
         return 1;
     }
     //cv::Mat 8mat(height, width, CV_16UC1, inputBuffer);
-    im_rgb_ = cv::Mat(height_, width_, CV_16UC3);
-    cv::cvtColor(image_, im_rgb_, cv::COLOR_BayerRG2RGB);
-    im_preview_ = cv::Mat(height_/4, width_/4, CV_8UC3);
-    resize(im_rgb_, im_preview_, im_preview_.size());
+    //im_rgb_ = cv::Mat(height_, width_, CV_16UC3);
+    //cv::cvtColor(image_, im_rgb_, cv::COLOR_BayerRG2RGB);
+    //im_preview_ = cv::Mat(height_/4, width_/4, CV_8UC3);
+    //resize(im_rgb_, im_preview_, im_preview_.size());
     //im_rgb_ = cv::Mat(width_, height_, CV_8UC3);
     //im_rgb16_.convertTo(im_rgb_, CV_8UC3, 1.0/256);
     return 0;
 }
 
+uint32_t eCamera::showRGB() {
+    im_rgb_ = cv::Mat(height_, width_, CV_8UC3);
+    cv::cvtColor(image_, im_rgb_, cv::COLOR_BayerRG2BGR);
 
-uint32_t eCamera::showData() {
     //namedWindow( "image preview", CV_WINDOW_AUTOSIZE );
-    imshow("image preview",image_);
+    imshow("PreviewWindow",im_rgb_);
+    eclogf(INFO,"Displayed RGB Image\n");
     return 0;
 }
 
-void eCamera::showit() {
-    uint8_t *ptr = image_.ptr();
-    for (int x=0 ; x<20; x++)
-        printf("%02x ",ptr[x]);
-    printf("\n");
+void eCamera::onMouse(int event, int x, int y, int, void* ctx){
+
+    eCamera *ecam = static_cast<eCamera*>(ctx);
+    uint32_t log_flags_ = ecam->log_flags_;
+
+    if (!ecam->mouse_down_ && event == EVENT_LBUTTONDOWN) {
+        eclogf(INFO,"Mousedown @%5d:%5d  %d\n",x,y,event);
+        ecam->mouse_down_ = true;
+    }
+
+    if (ecam->mouse_down_ && event == EVENT_LBUTTONUP) {
+        eclogf(INFO,"Mouseup @%5d:%5d  %d\n",x,y,event);
+        ecam->mouse_down_ = false;
+    }
+}
+
+void eCamera::showPreviewWindow() {
+    //image_ = Mat::zeros(height_, width_, CV_16UC1 );
+    namedWindow("PreviewWindow", CV_WINDOW_AUTOSIZE);
+    setMouseCallback("PreviewWindow",onMouse,this);
+}
+
+uint32_t eCamera::showData() {
+    //namedWindow( "image preview", CV_WINDOW_AUTOSIZE );
+    imshow("PreviewWindow",image_);
+    return 0;
 }
 

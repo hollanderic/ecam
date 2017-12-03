@@ -20,6 +20,13 @@ using namespace cv;
         } \
     } while(0);
 
+#define eclogf_s(flags,fmt...) \
+    do { \
+        if (ECAM_LOGS_##flags & this->log_flags_) { \
+            printf(fmt); \
+        } \
+    } while(0);
+
 
 class eCamera {
 public:
@@ -33,8 +40,10 @@ public:
 
     long        getGain()               { return getVal(ASI_GAIN);};
     long        setGain(long val)       { return setVal(ASI_GAIN,val);};
+    long        setGain(const char* val);
     long        getExposure()           { return getVal(ASI_EXPOSURE);};
     long        setExposure(long val)   { return setVal(ASI_EXPOSURE,val);};
+    long        setExposure(const char* val);
     float       getTemperature()        { return (float)getVal(ASI_TEMPERATURE)/10.0;}
     uint32_t    setMonoBin()            { return setVal(ASI_MONO_BIN,1);};
     long        isHWBin()               { return getVal(ASI_HARDWARE_BIN);};
@@ -54,15 +63,18 @@ public:
 
     uint32_t    loadData();
     uint32_t    showData();
+    uint32_t    showRGB();
+    void        showPreviewWindow();
     double      adu();
-    void        showit();
 
 
 private:
+    static void onMouse(int event, int x, int y, int, void*);
     long getVal( ASI_CONTROL_TYPE ctl);
     long setVal( ASI_CONTROL_TYPE ctl, long val);
 
     bool connected_;
+    bool mouse_down_;
 
     uint32_t log_flags_ = ECAM_LOGS_ALL;
 
@@ -73,6 +85,7 @@ private:
     int      height_;
     uint32_t pixel_size_;
     uint32_t bpp_;
+    int      bin_;
 
     Mat image_;
     Mat im_rgb16_;
