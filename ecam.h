@@ -41,15 +41,18 @@ public:
     long        getGain()               { return getVal(ASI_GAIN);};
     long        setGain(long val)       { return setVal(ASI_GAIN,val);};
     long        setGain(const char* val);
+
     long        getExposure()           { return getVal(ASI_EXPOSURE);};
     long        setExposure(long val)   { return setVal(ASI_EXPOSURE,val);};
     long        setExposure(const char* val);
-    float       getTemperature()        { return (float)getVal(ASI_TEMPERATURE)/10.0;}
-    uint32_t    setMonoBin()            { return setVal(ASI_MONO_BIN,1);};
-    long        isHWBin()               { return getVal(ASI_HARDWARE_BIN);};
-
     void        startExposure();
     int         exposureStatus();
+
+    float       getTemperature()        { return (float)getVal(ASI_TEMPERATURE)/10.0;}
+
+    uint32_t    setMonoBin()            { return setVal(ASI_MONO_BIN,1);};
+
+    long        isHWBin()               { return getVal(ASI_HARDWARE_BIN);};
 
     uint32_t    getWidth()              { return width_;};
     uint32_t    getHeight()             { return height_;};
@@ -60,7 +63,6 @@ public:
 
     uint32_t    saveTIFF(const char* fname);
     uint32_t    setROI(uint32_t x, uint32_t y, uint32_t width, uint32_t height);
-
     uint32_t    loadData();
     uint32_t    showData();
     uint32_t    showRGB();

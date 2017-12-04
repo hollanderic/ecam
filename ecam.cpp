@@ -201,7 +201,6 @@ uint32_t eCamera::showRGB() {
     im_rgb_ = cv::Mat(height_, width_, CV_8UC3);
     cv::cvtColor(image_, im_rgb_, cv::COLOR_BayerRG2BGR);
 
-    //namedWindow( "image preview", CV_WINDOW_AUTOSIZE );
     imshow("PreviewWindow",im_rgb_);
     eclogf(INFO,"Displayed RGB Image\n");
     return 0;
